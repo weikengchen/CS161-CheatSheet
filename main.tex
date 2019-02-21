@@ -1,0 +1,1080 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{color}
+\usepackage{comment}
+\usepackage{titlesec}
+\usepackage{mathtools}
+\RequirePackage{etex}
+\usepackage[utf8]{inputenc}
+
+\usepackage[n,advantage,operators,sets,adversary,landau,probability,notions,logic,ff,mm,primitives,events,complexity,asymptotics,keys]{cryptocode}
+
+\usepackage[tt=false]{libertine}
+\usepackage{libertinust1math}
+\usepackage[T1]{fontenc}
+
+\newcommand{\msf}[1]{\mathsf{#1}}
+
+\setlength\parindent{0pt}
+
+\newcommand{\parhead}[1]{\noindent \textbf{#1}}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vfill
+    \includegraphics[width=0.75\textwidth]{toolbox_repair.pdf}\\
+    \vspace{0.2em}
+    {\bfseries\huge
+        Computer Security Course Notes\\
+        Spring 2019\\[0.2em]
+        {\Large Version 4.0}\\
+        \vskip2cm
+        Weikeng Chen\\
+    }    
+    \vfill
+\end{titlepage}
+
+
+%\smallskip
+%That is to say, {\color{blue} \bf don't rely solely on} this course notes for exam preparation.
+
+\section{Introduction (Jan 22)}
+
+\parhead{Social engineering:} Personal information is not secret among people nearby. People can be tricked to degrade security.
+\begin{itemize}
+    \item \emph{e.g.}, Intimate Partner Threat (IPT). Partners have physical access to your devices and know much of your personal information like birthday.
+    
+    \item \textbf{Prevention:} device activity monitoring.
+\end{itemize}
+
+\parhead{Ransomware:} a type of malware; hackers ask for money (\emph{e.g.}, cryptocurrency) to recover encrypted files.
+\begin{itemize}
+    \item \textbf{Prevention:} Backup. 
+\end{itemize}
+
+\parhead{Worm:} a type of malware.
+\begin{itemize}
+    \item \textbf{Behavior:} self-propagation to other computers that are reachable (\emph{e.g.}, via USB sticks / local network). 
+\end{itemize}
+
+\parhead{Buffer overflow:} 
+\begin{itemize}
+    \item \textbf{Mitigation:} type-safe programming languages (\emph{e.g.}, Java, Python).
+\end{itemize}
+
+\parhead{Intrusion detection:} 
+\begin{itemize}
+    \item \textbf{Detection:} detect something wrong.
+    
+    \item \textbf{Response:} tackle something wrong.
+    
+    \item \textbf{False positive (FP):} alert, but nothing wrong.
+    
+    \item \textbf{False negative (FN):} something wrong, yet no alert.
+    
+    \item \textbf{Problem of high FP:} Every positive needs human actions. When there are too many, humans can no longer handle. Real threats will thus hide themselves among many false alarms.
+\end{itemize}
+
+\begin{comment}
+\parhead{Selected security principles:}
+\begin{itemize}
+    \item \textbf{Security is economics:} cost-effective protection.
+    \begin{itemize}
+        \item A normal bike needs a cable lock.
+        \item A nuclear missile needs armed forces.
+    \end{itemize}
+    
+    \item \textbf{Defense in depth:} more than one layer of protection.
+    \begin{itemize}
+        \item Side effect: might increase the false positive rate.
+    \end{itemize}
+    
+    \item \textbf{Consider human factors:} usable security for ordinary people.
+    \begin{itemize}
+        \item \emph{e.g.}, programmers will make mistakes.
+    \end{itemize}
+\end{itemize}
+\end{comment}
+
+\parhead{Password management:} 
+\begin{itemize}
+    \item \textbf{Good passwords:} Human-memorizable, with sufficient entropy, not based on sensitive personal information (e.g., date of birth).
+    \begin{itemize}
+        \item \emph{Bad:} aRn1CagE1
+        \item \emph{Good:} tasty pot machine learning where the bears are
+    \end{itemize}
+    
+    \item \textbf{Password reuse:} Users tend to use the same password for many websites.
+    \begin{itemize}
+        \item \textbf{Password manager (e.g., LastPass).} Auto-fill randomly-generated, non-repeating, high-quality passwords for all websites. Users enter a \emph{master password} to unlock the password manager. It can distinguish and reject phishing websites with similar domain names.
+        
+        \item \textbf{Two-factor authentication.}
+        \begin{itemize}
+            \item \emph{SMS/Email:} most commonly used.
+            
+            \item \emph{Hardware keys (e.g., yubikey):} an alternative to SMS/Email, no need to trust web service providers, but trust the yubikey. 
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+%\subsection{Labs and quizzes}
+
+\begin{comment}
+\parhead{$\diamond$ Experiment: Multilinguists are safer.} 
+
+\smallskip
+You can use passwords of non-ASCII characters in some websites. That is to say, you can use Spanish, Italian, Chinese, and Japanese characters as passwords. It may enable much hard-to-guess passwords. 
+
+\smallskip
+Sometimes it's impossible to enter foreign-language passwords directly in the password boxes. But you can, first, enter the password in the location bar or the search bar, and then copy-paste it into the password boxes.
+
+\smallskip
+\underline{Experiments:}
+\begin{itemize}
+    \item Can you use foreign-language passwords in Gradescope?
+    \vspace{6em}
+    
+    \item Can you use foreign-language passwords in Piazza?
+\end{itemize}
+
+\end{comment}
+
+\parhead{$\diamond$ Quiz: Increased FP in defense in depth (from a real exam).}
+
+\smallskip
+A company uses two intrusion detection systems (IDS): $\mathcal{D}_1$ and $\mathcal{D}_2$, as follows:
+\begin{itemize}
+    \item $\mathcal{D}_1$'s FP rate: $\alpha$.
+    \item $\mathcal{D}_2$'s FP rate: $\beta$.
+\end{itemize}
+
+We don't know how likely the false positives of the two IDS overlap. It is possible that they share a lot false positives; however, it is also possible that they have distinct false positives.
+%
+Now consider a composition of the two IDS, $\mathcal{D}_{1+2}$. It alerts when \emph{at least} one of $\{\mathcal{D}_1,\mathcal{D}_2\}$ alerts.
+
+\smallskip
+\underline{Questions:} 
+
+\begin{itemize}
+    \item What is $\mathcal{D}_{1+2}$'s maximal FP? Note that it should be $\leq 1$.
+    \vspace{4em}
+    
+    \item Draw a figure for $\mathcal{D}_{1+2}$'s maximal FP assuming $\alpha>\beta$.
+    \vspace{4em}
+     
+    \item What is $\mathcal{D}_{1+2}$'s minimal FP?
+    \vspace{4em}
+    
+    \item Draw a figure for $\mathcal{D}_{1+2}$'s minimal FP assuming $\alpha>\beta$.
+    \vspace{4em}
+    
+    \item Assume $\mathcal{D}_1$ and $\mathcal{D}_2$ are \emph{independent}: they learn their detection policies from very distinct datasets that do not depend on each other, and they use very different algorithms. Although it's impossible in the real world, it is interesting to see what will happen. What is $\mathcal{D}_{1+2}$'s FP in this case?
+    \vspace{4em}
+\end{itemize}
+
+\clearpage
+\section{Security Principles (Jan 24)}
+
+\parhead{Security is economics.} More security costs more, sometimes unnecessary. 
+\begin{itemize}
+    \item Avoid overdose of security.
+    \item Standards usually define security demand.
+\end{itemize}
+
+\smallskip\parhead{Least privilege:} Only give necessary privileges.
+\begin{itemize}
+    \item \emph{e.g.}, no roof access to graduate students in Soda Hall.
+\end{itemize}
+
+\smallskip\parhead{Privilege separation:} Achieve least privilege by isolating privileges to a small trusted computing base (TCB).
+\begin{itemize}
+    \item \emph{e.g.}, Chrome browser puts the rendering engine in a small isolated sandbox, so that even the rendering engine is compromised, it does not affect the browser kernel, and not the rest of the compute system.
+\end{itemize}
+
+\smallskip\parhead{TCB:} The components we place assumptions on.
+\begin{itemize}
+    \item TCB of a networked system includes:
+    \begin{itemize}
+        \item OS and other software of this system.
+        \begin{itemize}
+            \item Probably, cryptography that the system relies on.
+        \end{itemize}
+        \item Hardware of this system.
+        \item Administrators of this system.
+        \item The building manager who has access to this machine.
+        \item The government of the country where the system is hosted.
+        \item An unknown alien who has the power to control the Earth and tamper with this machine, but chooses not to invade at this moment.
+    \end{itemize}
+    \item TCB should be simple. KISS (keep it simple, stupid).
+\end{itemize}
+
+\smallskip\parhead{Division of trust \& separation of responsibility:}
+If you need to keep a privilege, consider requiring multiple parties to work together to exercise it.
+\begin{itemize}
+    \item \emph{e.g.}, a graduate student needs a committee of at least three professors to approve the thesis.
+    
+    \item \emph{e.g.}, the supreme court has nine justices.
+\end{itemize}
+
+\smallskip\parhead{Complete mediation:} A security check must be non-bypassable. 
+\begin{itemize}
+    \item Soda Hall has so many doors -- all should have active locks.
+\end{itemize}
+
+\newpage
+\smallskip\parhead{Time of Check To Time of Use:} The check is done before use, but when we use, the condition for the check changes.
+\begin{itemize}
+    \item At 9:00:00pm, before we withdraw money, the ATM 1 and the ATM 2 check if we have balance (and I have only \$200).
+    \item At 9:00:01pm, the ATM 1 gives me \$200.
+    \item At 9:00:02pm, the ATM 2 gives me \$200.
+    \item At 9:00:03pm, the ATM 1 subtracts \$200 from my account.
+    \item At 9:00:04pm, the ATM 2 subtracts \$200 from my account, which fails.
+    \item It is too late. I already have \$200 + \$200.
+    \item Thus, a bank database will use transaction queries -- the second ATM's query to my account will be delayed until the first ATM finishes the transaction. 
+\end{itemize}
+
+\smallskip\parhead{Psychological acceptability:}
+\begin{itemize}
+    \item \emph{e.g.}, a browser, Chrome, plans to forbid a user to access a website with outdated security communication technology (not just a warning).
+    
+    \item Users will, however, simply use another browser to open that website.
+\end{itemize}
+
+\smallskip\parhead{Consider human factors:} A golden rule in usable security.
+\begin{itemize}
+    \item Do not set too high expectation.
+    \begin{itemize}
+        \item It is impossible that everyone uses a password manager.
+        
+        \item It is impossible that people do not reuse their passwords in different websites.
+        
+        \item It is impossible that people can remember very long passwords.
+        
+        \item It is impossible for them to read warning messages carefully.
+    \end{itemize}
+    
+    \item Even a few can, the majority will not.
+    
+    \item Do not assume users are $<35$-year-old college students with a major/minor in computer science, or even with one semester security training in CS161.
+    
+    \item \emph{e.g.}, people celebrate their birthday on Facebook.
+\end{itemize}
+
+\smallskip\parhead{Know your threat model:} The threat model decides what security you need to focus on, and it might change.
+\begin{itemize}
+    \item If one wins the jackpot of Mega Millions, this person needs to hire guards.
+\end{itemize}
+
+\newpage
+\smallskip\parhead{Defense in depth:} If needed, use multiple layers of defense.
+\begin{itemize}
+    \item Important example: robust combiner of cryptographic encryption.
+    \begin{itemize}
+        \item Encrypting a message using 10 different keys, 10 different encryption algorithms can really bring very high security (not a joke).
+        
+        \item We know AES could be secure, DES could be secure... China has their own algorithms, Europe has their own algorithms...
+        
+        \item We can combine them together, AES-DES-...-SM2-IDEA. Only when ALL of them are broken, the encryption is broken.
+        
+        \item Many mature research papers in this direction.
+    \end{itemize}
+    
+    \item If you will work for national security or military, I highly recommend you to do so. It is weird that it seems lesser-known.
+\end{itemize}
+
+\smallskip\parhead{Detect if you can’t prevent:}
+\begin{itemize}
+    \item Some cities' metro systems use outdated cards, which have insufficient security against balance rewriting.
+    
+    \item It is possible that someone changes the balance in the card.
+    
+    \item It is detectable, just requires a nightly accounting.
+\end{itemize}
+
+\smallskip\parhead{***Don’t*** rely on security through obscurity:}
+\begin{itemize}
+    \item Last semester, students who wrote "rely on security through obscurity" without "don't" as a security principle lost $0.5$ point.
+    
+    \item Same as the following:
+    \begin{itemize}
+        \item Shannon's Maxim.
+        \item The enemy knows the system.
+        \item Kerckhoffs's Principle.
+    \end{itemize}
+    
+    \item "Charlie, the key in the fake rock only works if it's among other rocks" - Alan Harper (Two and a Half Men, Pilot).
+    \begin{itemize}
+        \item Alan still violated this principle.
+    \end{itemize}
+\end{itemize}
+
+\smallskip\parhead{Design security in from the start:}
+\begin{itemize}
+    \item \emph{e.g.}, changing insecure code to secure code is painful.
+\end{itemize}
+
+\newpage
+\subsection{Quizzes}
+
+\parhead{$\diamond$ Quiz: Three principles.}
+What is the difference between (1) least privilege, (2) separation of responsibility, and (3) privilege separation? Please provide one example for each. 
+\vspace{10em}
+
+\parhead{$\diamond$ Quiz: Chase Chief Security Officer (CSO).}
+Imagine you are the CSO of J.P. Morgan \& Chase. Think about how each one of the security principles applies to Chase's business. 
+\vspace{15em}
+
+\parhead{$\diamond$ Quiz: Mega Millions' security.}
+Winning a jackpot is likely impossible. In case you win, how to deal with the jackpot is a hard question. What is your plan to claim the lottery prize and then live safely for at least 30 years? For your information, in the United States, name change is very hard.
+\vspace{5em}
+
+\newpage
+\section{Overflows, Injection, and Memory Safety (Jan 29)}
+\parhead{Where to find stack buffer overflow?} 
+\begin{itemize}
+    \item \textbf{Variable:} usually char array, especially: 
+    \begin{itemize}
+        \item \texttt{char buf{\textbf{\color{red}[}}12{\textbf{\color{red}]}};}
+    \end{itemize}
+    
+    \item \textbf{Operation:} usually from user-provided input, especially: 
+    \begin{itemize}
+        \item \texttt{scanf("\%s",~buf);}
+        \item \texttt{fscanf(fp,~"\%s",~buf);}
+    \end{itemize}
+\end{itemize}
+
+\parhead{How to launch stack buffer overflow attacks?}
+\begin{itemize}
+    \item \textbf{Common solution:} Find the distance between the very beginning of the buffer value to the return instruction pointer (\texttt{rip}).
+    \begin{itemize}
+        \item Manual calculation usually fails: Compilers may add padding.
+        
+        \item Use GDB to seek addresses; \emph{e.g.}, use \texttt{info frame} to find the saved frame pointer (\emph{i.e.}, saved \texttt{\%ebp}) and return instruction pointer (\emph{i.e.}, saved \texttt{\%eip}), and use \texttt{x/16xw buf} to find the address of \texttt{buf}. 
+        
+        \item Add the payload and use GDB to observe what is happening.
+    \end{itemize}
+    
+    \item \textbf{Other techniques:}
+    \begin{itemize}
+        \item \texttt{ret2ret}, \texttt{ret2esp}. See M\"uller's ASLR Smack \& Laugh Reference.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Format string vulnerability:}
+\begin{itemize}
+    \item \textbf{Background:} C has formatted output function, \emph{e.g.}, \texttt{printf}, like this:
+    \[
+    \begin{array}{l}
+    \texttt{char fmt[] = "\%s\%d\textbackslash n";}\\
+    \texttt{printf(fmt, "hello", 123);}
+    \end{array}
+    \]
+    \item \textbf{Takeaway:} Do not let the user-provided input become the format specification (\emph{i.e.}, \texttt{fmt} above). 
+    
+    \item \textbf{Reading:} In the following code, the user can enter "\%d\%d\%d\%d\%d..." to read some data in the stack.
+    \[
+    \begin{array}{l}
+    \texttt{scanf("\%s", fmt);}\\
+    \texttt{printf(fmt, 123, 456);}
+    \end{array}
+    \]
+    because \texttt{printf} does not know how many parameters there are, it just tries to read according to the format specification (see \href{http://www.cis.syr.edu/~wedu/Teaching/cis643/LectureNotes_New/Format_String.pdf}{this link} for a figure). 
+    
+    \clearpage
+    \item \textbf{Writing:} There is an unnecessary design in C. In sum, \texttt{printf} can write data to a variable. 
+    \begin{itemize}
+        \item \texttt{\%n} does not print anything. Rather, it writes the number of bytes being printed to the corresponding pointer.
+        \[
+        \begin{array}{l}
+        \texttt{int i;}\\
+        \texttt{printf("12345\%n", \&i);}
+        \end{array}
+        \]
+        which will write $5$ to \texttt{i}. It is useless unless we control the address. 
+        
+        \item \textbf{Control that pointer.} Remember that even if no parameters are passed to \texttt{printf}, it will still read data in the stack. If we place the address we want somewhere in the buffer :), then we can try to let \texttt{printf} touch that and use that for the pointer that corresponds to \texttt{\%n}. An example attack code:
+        \[
+        \texttt{"\textbackslash x10\textbackslash x01\textbackslash x48\textbackslash x08~\%x~\%x~\%x~\%x~\%n"}
+        \]
+        where the purpose of \texttt{\%x} is to let \texttt{printf} go up the stack to touch the buffer (in the calling function) that stores the memory address ``\textbackslash x10\textbackslash x01\textbackslash x48\textbackslash x08'' (in the format string), probably we need more or less than four ``\%x''.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Defenses:} We list the common defenses as follows: (will usually be on the exam)
+\begin{itemize}
+    \item Memory-safe language.
+    
+    \item Stack canary, a random value before the saved frame pointer that cannot be changed if we want to \texttt{ret}.
+    \begin{itemize}
+        \item Do not necessarily start with \texttt{\textbackslash x00}.
+    \end{itemize}
+    
+    \item Non-executable stack (NX bit in the segment's flag.). 
+    \begin{itemize}
+        \item Need CPU support.
+        \item Cannot prevent against all buffer overflow attacks; \emph{e.g.}, return oriented programming.
+    \end{itemize}
+    
+    \item Data execution protection (DEP) or W\^{}X.
+    \begin{itemize}
+        \item W\^{}X, aka W xor X, means that all executable stacks are not writable, all writable stacks are not executable. That is, stack is not executable, text is not writable.
+    \end{itemize}
+    
+    \item Address space layout rerandomization.
+    \begin{itemize}
+        \item Change the memory addresses each time the program starts.
+    
+        \item Most implementations do not rerandomize the text segment (\emph{i.e.}, the executable code).
+        
+        \item Thus, open to return-oriented programming (ROP) attack.
+    \end{itemize}
+    
+    \item Security checks, \emph{e.g.}, bound checks.
+\end{itemize}
+
+\parhead{Non-stack buffer overflow attacks:} There are a few buffer overflow attacks that do not aim at the stack. Thus, they also bypass some stack buffer overflow protections.
+\begin{itemize}
+    \item In 2007, Pincus and Baker summarizes other attacks:
+    \begin{itemize}
+        \item Arc injection: \emph{e.g.}, return-to-libc.
+        \begin{itemize}
+            \item Instead of \emph{inserting shellcode to the memory} and changing a pointer, we do not insert the shellcode.
+            \item Rather, we modify the pointer to jump to some useful function in \texttt{libc}, \emph{e.g.}, \texttt{system()}.
+        \end{itemize}
+        
+        \item Pointer subterfuge.
+        \begin{itemize}
+            \item Modify some function pointer, rather than \texttt{rip}.
+         
+            \item Modify some data pointer, usually to modify some global value.
+            
+            \item Modify the exception handlers. Windows allows programs to specify exception handlers via pointers to them. If we can modify those pointers, then when exception occurs, the code that pointer points to will be executed.
+            
+            \item Modify pointers in the virtual function table. C++ uses a function pointer table to implement virtual functions (functions that may be overwritten in derived classes). 
+        \end{itemize}
+        
+        \item Heap smashing.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Software Testing:} 
+\begin{itemize}
+    \item \textbf{Fuzz testing:} use random inputs.
+    
+    \item \textbf{Mutation:} see if the tests find errors if some statements in the source code changes (check code coverage).
+    
+    \item \textbf{Spec-driven:} close to formal analysis, \emph{i.e.}, testing the code of the a function if it matches the specification of a function. Sometimes, it requires trying all the possible input values.
+\end{itemize}
+
+\parhead{Problems with frequent patching:}
+\begin{itemize}
+    \item Usually need to restart production systems. Though hot patching techniques exist, they are complicated.
+    
+    \item Patching causes instability.
+\end{itemize}
+
+\newpage
+\section{Software Security: Defenses (Jan 31)}
+\parhead{Common approaches for software security:} finding vulnerabilities before hackers identify them.
+\begin{itemize}
+    \item \textbf{Vulnerability scanning.} Use some software scanner to automate finding some vulnerabilities, based on a database of known common vulnerabilities.
+    \begin{itemize}
+        \item \emph{e.g.}, a website scanner tries common SQL injection codes in every input box of the website.
+    \end{itemize}
+    
+    \item \textbf{Penetration testing.} Also known as pen-testing. Pay someone to break into your systems.
+    \begin{itemize}
+        \item More in-depth manual check than automated scanning.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Program analysis:}
+\begin{itemize}
+    \item \textbf{Preconditions:} what must hold for \emph{the input or global variables} of a function to operate correctly (\emph{e.g.}, no memory safety issues, has valid and desired output).
+    
+    \item \textbf{Postconditions:} what will hold after function completes, \emph{e.g.}, \texttt{malloc} either returns a valid pointer or \texttt{NULL}.
+    
+    \item \textbf{Invariants:} relevant conditions that always hold at a given point in a function; we use the invariants to simplify our analysis.
+\end{itemize}
+
+\newpage
+\section{Introduction to cryptography, one-time pad, and block cipher (Feb 5)}
+\parhead{Goals of cryptography:}
+\begin{itemize}
+    \item {\bf Confidentiality:} Adversaries cannot read the data.
+    \begin{itemize}
+        \item Symmetric encryption, public-key encryption.
+    \end{itemize}
+    
+    \item {\bf Integrity:} Adversaries cannot change the data without being detected.
+    \begin{itemize}
+        \item HMAC, other MAC, digital signature.
+    \end{itemize}
+    
+    \item {\bf Authenticity:} Adversaries cannot forge data and pretend that someone else produced the data.
+    \begin{itemize}
+        \item Digital signature. MAC can also be used here is the parties knowing the MAC key are not \emph{considered as} adversaries.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Symmetric vs. asymmetric:}
+\begin{itemize}
+    \item {\bf Symmetric:} 
+    \begin{itemize}
+        \item The encryption key and the decryption key is the same.
+        \item The MAC generation key and the MAC verification key is the same.
+    \end{itemize}
+    
+    \item {\bf Asymmetric:}
+    \begin{itemize}
+        \item The receiver has the decryption key, and the sender has the receiver's encryption key; they are different.
+        
+        \item The receiver has the sender's signature verifying key, and the sender has the signature signing key; they are different.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Symmetric encryption:}
+\begin{itemize}
+    \item {\bf Syntax:}
+    \begin{itemize}
+        \item $\msf{KeyGen}()\rightarrow\msf{k}$.
+        
+        \item $\msf{Enc}(\msf{k},\msf{m})\rightarrow\msf{c}$.
+        
+        \item $\msf{Dec}(\msf{k},\msf{c})\rightarrow\msf{m}$, such that    $\msf{Dec}(\msf{k},\msf{Enc}(\msf{k},\msf{m}))=\msf{m}$.
+    \end{itemize}
+    
+    \item {\bf Correctness:} For every $\msf{k}$ and every $\msf{m}$,  $\msf{Dec}(\msf{k},\msf{Enc}(\msf{k},\msf{m}))=\msf{m}$.
+    
+    \item {\bf CPA security:} No probabilistic polynomial-time algorithm can win the IND-CPA game (described below) with a possibility non-negligibly larger than $\frac{1}{2}$.
+\end{itemize}
+
+\newpage
+\parhead{IND-CPA security:}
+\begin{itemize}
+    \item Consider an adversary $\mathcal{A}$ who has access to a black-box encryption machine/oracle $\msf{Enc}(\msf{k},\cdot)$, but cannot extract the key $\msf{k}$ from this black-box machine. Yet, the adversary can ask the machine for the ciphertext of any message $\msf{m}_i$ ($i=1,2,..., N_1$) for some $N_1$ that the adversary chose.
+    
+    \item The adversary $\mathcal{A}$ picks two messages $\msf{m}^\msf{chosen}_0$ and $\msf{m}^\msf{chosen}_1$ and sends them to the challenger. The challenger randomly picks $b\in\{0,1\}$ and returns $\msf{Enc}(\msf{k},\msf{m}^\msf{chosen}_b)$.
+    
+    \item The adversary can then make $N_2$ requests to the black-box encryption machine for ciphertext of any message $\msf{m}_i$ ($i=N_1+1,N_1+2,..., N_1+N_2$) for some $N_2$ that the adversary chose.
+    
+    \item The adversary guesses $b$.
+\end{itemize}
+
+\parhead{One-time pad:}
+\begin{itemize}
+    \item The sender and the receiver share an $\ell$-bit pad $\msf{k}=\msf{k}_1\parallel \msf{k}_2\parallel... \msf{k}_\ell$, where $\msf{k}_i\in\{0,1\}$, $i\in\{1,2,...,\ell\}$.
+    
+    \item {\bf Construction:}
+    \begin{itemize}
+        \item $\msf{KeyGen}()\rightarrow\msf{k}$.
+        \begin{itemize}
+            \item Generate random $\ell$-bit string.
+        \end{itemize}
+        
+        \item $\msf{Enc}(\msf{k},\msf{m})\rightarrow\msf{c}$.
+        \begin{itemize}
+            \item Assume $|\msf{m}|\leq\ell$, then $\msf{c}_i=\msf{m}_i\oplus \msf{k}_i$ where $\oplus$ is bit-wise XOR.
+            
+            \item Here, $\msf{c}=\msf{c}_1\parallel \msf{c}_2\parallel...\parallel \msf{c}_\ell$.
+            
+            \item Here, $\msf{m}=\msf{m}_1\parallel \msf{m}_2\parallel...\parallel \msf{m}_\ell$.
+        \end{itemize}
+        
+        \item $\msf{Dec}(\msf{k},\msf{c})\rightarrow\msf{m}$, similar to encryption, such that    $\msf{Dec}(\msf{k},\msf{Enc}(\msf{k},\msf{m}))=\msf{m}$.
+    \end{itemize}
+    
+    \item One-time pad is information-theoretically secure if the pad is used only once.
+    
+    \item That is to say, a single one-time pad of length $\ell$ can only encrypt $\ell$ bits.
+    
+    \item Do not reuse the one-time pad.
+\end{itemize}
+
+\parhead{Block cipher:}
+\begin{itemize}
+    \item {\bf Synax:}
+    \begin{itemize}
+        \item $\mathsf{E}: \mathcal{K}\times \{0,1\}^\ell \rightarrow \{0,1\}^\ell$, where $\mathcal{K}$ is the key space, $\{0,1\}^\ell$ is the message space and $\mathcal{C}$ is the enciphered message space.
+        
+        \item $\mathsf{E}(\msf{k},\cdot)$ is an enciphering permutation from $\{0,1\}^\ell$ to $\{0,1\}^\ell$, one-to-one, bijective, deterministic.
+        
+        \item There is an efficiently computable inverse of the permutation, named $\mathsf{D}(\msf{k},\cdot)$, which is the inverse of $\mathsf{E}(\msf{k},\cdot)$. 
+        
+        \begin{itemize}
+            \item $\mathsf{D}(\msf{k},\msf{E}(\msf{k},\msf{m}))=m$ for all $m\in\{0,1\}^\ell$.
+        \end{itemize}
+    \end{itemize}
+    
+    \item Since it is deterministic, it is not IND-CPA. That is to say, enciphering is not encrypting because it is not secure enough.
+    
+    \item {\bf Security:} A block cipher with a random key $\msf{k}$ sampling from key space $\mathcal{K}$ is computationally indistinguishable with a truly random permutation.
+\end{itemize}
+
+\parhead{AES, the standard block cipher:}
+\begin{itemize}
+    \item Commonly used today because of many years of public cryptanalysis. 
+    
+    \item Not the best design we know. 
+    
+    \item People assume it to be a block cipher.
+\end{itemize}
+
+\newpage
+\section{Symmetric encryption (Feb 7)}
+\parhead{Building symmetric encryption from block cipher:}
+\begin{itemize}
+    \item Offer two additional properties over the block cipher:
+    \begin{itemize}
+        \item Satisfy the IND-CPA security; thus, at least using the same key encrypting the same message should result in different ciphertexts that computationally look different from each other.
+        
+        \item Can encrypt very long messages securely, even if there are repetitions in the message.
+    \end{itemize}
+    
+    \item {\bf Tool:} Mode of operation
+    \begin{itemize}
+        \item The elevation from block cipher to symmetric encryption.
+        
+        \item A set rule to construct a symmetric encryption scheme from arbitrary block cipher.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Initialization vector (IV):}
+\begin{itemize}
+    \item Some random input for symmetric encryption to be not deterministic.
+    
+    \begin{itemize}
+        \item For some modes of operation, IV must be random (\emph{e.g.}, CBC mode).
+        
+        \item For some modes of operation, IV just needs to be non-repeating, \emph{i.e.}, can be predictable (\emph{e.g.}, CTR mode), and can start with $0$. 
+    \end{itemize}
+\end{itemize}
+
+\parhead{Electronic codebook mode (ECB):}
+\begin{itemize}
+    \item Does not use an IV, impossible to be IND-CPA.
+    
+    \begin{itemize}
+        \item Ciphertext $\msf{C}=\msf{C}_1\parallel\msf{C}_2\parallel...\msf{C}_n$. Each block $|\msf{C}_i|=\ell$.
+        
+        \item Plaintext $\msf{M}=\msf{M}_1\parallel\msf{M}_2\parallel...\msf{M}_n$. Each block $|\msf{M}_i|=\ell$.
+        
+        \item $\msf{C}_i=\msf{E}(\msf{k},\msf{M}_i)$.
+    \end{itemize}
+    
+    \item {\bf Padding:} The original message $\msf{M}$ may have a length not a multiple of $\ell$. The common padding is as follows:
+    \begin{itemize}
+        \item For $|\msf{M}|=k\ell+r$, $k\in\mathbb{N}$ and $0<r<\ell$, append $1\parallel0^{r-1}$ at the end.
+        
+        \item For $|\msf{M}=k\ell$, $k\in\mathbb{N}$, append $1\parallel 0^{\ell-1}$ at the end.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Cipher block chaining mode (CBC):}
+\begin{itemize}
+    \item Use IV and is IND-CPA if the IV is random.
+    
+    \begin{itemize}
+        \item Ciphertext $\msf{C}=\msf{IV}\parallel\msf{C}_1\parallel\msf{C}_2\parallel...\msf{C}_n$. Each block $|\msf{C}_i|=\ell$.
+        
+        \item Plaintext $\msf{M}=\msf{M}_1\parallel\msf{M}_2\parallel...\msf{M}_n$. Each block $|\msf{C}_i|=\ell$.
+        
+        \clearpage
+        \item For $i=1$, $\msf{C}_1=\msf{E}(\msf{k},\msf{M}_1\oplus\msf{IV})$.
+        
+        \item For $i>1$, $\msf{C}_i=\msf{E}(\msf{k},\msf{M}_i\oplus \msf{C}_{i-1})$.
+    \end{itemize}
+    
+    \item {\bf Parallelizability:}
+    \begin{itemize}
+        \item Encryption is not nicely parallelizable.
+        
+        \item Decryption is nicely parallelizable.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Counter mode (CTR):}
+\begin{itemize}
+    \item Can use predictable nonce, it just needs to be non-repeating.
+    
+    \item The IV is nonce + counter, where the counter usually starts with zero.
+    \begin{itemize}
+        \item If the nonce has $\ell_\msf{nonce}$ bits, and the counter has $\ell_\msf{counter}$ bits, then $\ell_\msf{nonce}+\ell_\msf{counter}=\ell$. 
+        
+        \item The nonce can be used to encrypt $2^{\ell_\msf{counter}}$ blocks of messages (including the padding).
+
+        \item Ciphertext $\msf{C}=\msf{IV}\parallel\msf{C}_1\parallel\msf{C}_2\parallel...\msf{C}_n$. Each block $|\msf{C}_i|=\ell$.
+        
+        \item Plaintext $\msf{M}=\msf{M}_1\parallel\msf{M}_2\parallel...\msf{M}_n$. Each block $|\msf{C}_i|=\ell$.
+        
+        \item For $i=1$, $\msf{C}_1=\msf{E}(\msf{k},\msf{M}_1\oplus\msf{IV})$.
+        
+        \item For $i>1$, $\msf{C}_i=\msf{E}(\msf{k},\msf{M}_i\oplus \msf{C}_{i-1})$.
+    \end{itemize}
+    
+    \item {\bf Parallelizability:} Both encryption and decryption are nicely parallelizable.
+\end{itemize}
+
+\parhead{Pseudorandom generator (PRG):}
+\begin{itemize}
+    \item {\bf Syntax:}
+    \begin{itemize}
+        \item Given a seed $s$ with sufficient entropy, generates an infinite sequence of random-looking bits.
+    \end{itemize}
+    
+    \item Can be used for stream cipher, which is almost identical to the block cipher.
+\end{itemize}
+
+\newpage
+\section{Public-key cryptography (Feb 12)}
+\parhead{Public key and private key:}
+\begin{itemize}
+    \item The main difference from symmetric encryption is that public-key cryptography uses a key pair: one public key, one private key. 
+    
+    \item In public-key encryption,
+    \begin{itemize}
+        \item The encryption key, or the public key, $\msf{ek}$, is used to encrypt a message that only one who has the private key can decrypt.
+        
+        \item The decryption key, or the private key, $\msf{dk}$, is used to decrypt a ciphertext encrypted by $\msf{ek}$.
+    \end{itemize}
+    
+    \item In digital signature,
+    \begin{itemize}
+        \item The signing key, or the private key, $\msf{sk}$, is used to generate a signature that only one who has $\msf{sk}$ can generate.
+        
+        \item The verifying key, or the public key, $\msf{vk}$, is used to verify whether a signature is indeed generated by $\msf{sk}$.
+    \end{itemize}
+\end{itemize}
+
+\parhead{One-way function:}
+\begin{itemize}
+    \item A function $f(x)$ is one-way if it is easy to compute $y=f(x)$, but hard to compute $x'$ such that $f(x')=y$ for some $y=f(x)$ for randomly sampled $x$.
+\end{itemize}
+
+\parhead{Discrete-log one-way function:}
+\begin{itemize}
+    \item For a sufficiently large prime number $p$ (usually, $2048$ bits) and a \emph{generator} of the group $\mathbb{Z}_p^*$, say $g\in\mathbb{Z}_p^*$.
+    
+    \item Define the function: $f(x)=g^x \pmod{p}$, where $x\in\{0,1,...,p-2\}$.
+    
+    \item {\bf One-wayness:} Given $y=f(x)$ for a random $x$, it is computationally hard to find $x'$ such that $f(x')=y$.
+\end{itemize}
+
+\parhead{Diffie-Hellman key exchange:}
+\begin{itemize}
+    \item {\bf Protocol}: 
+    \begin{itemize}
+    \item Consider two users Alice and Bob who want to establish a secret key $\msf{k}$ between them.
+    
+    \item Alice picks random $\alpha\sample\{0,1,...,p-2\}$ and Bob picks $\beta\sample\{0,1,...,p-2\}$.
+    
+    \item Alice sends Bob $g^\alpha \pmod{p}$ and Bob sends Alice $g^\beta \pmod{p}$.
+    
+    \item Both compute locally $g^{\alpha\beta}\pmod{p}$.
+    
+    \item The shared secret key $\msf{k}$ is to apply a hash function over $g^{\alpha\beta}$.
+    \end{itemize}
+    
+    \item {\bf Security:} Based on computational Diffie-Hellman (CDH) assumption, discussed below.
+
+\end{itemize}
+
+\parhead{Symmetric encryption vs. public-key encryption:}
+\begin{itemize}
+    \item People prefer symmetric encryption because it has better performance; in particular, good for long messages.
+    
+    \item {\bf Hybrid encryption:}
+    \begin{itemize}
+        \item Uses public-key encryption/Diffie-Hellman key exchange to establish a secret, and uses this shared secret as the key for symmetric encryption to encrypt the actual message.
+    \end{itemize}
+\end{itemize}
+
+\parhead{Computational Diffie-Hellman assumption (CDH):}
+\begin{itemize}
+    \item For random $\alpha$ and $\beta$, given $g^{\alpha}$ and $g^{\beta}$, it is computationally infeasible to compute $g^{\alpha\beta}$.
+\end{itemize}
+
+\parhead{Man-in-the-middle attacks:}
+\begin{itemize}
+    \item Diffie-Hellman key exchange is insecure against a network attacker who launches man-in-the-middle attacker.
+    
+    \item {\bf Goal:} Instead of letting Alice and Bob establishing a shared secret $\msf{k}$, the attacker causes Alice to use secret $\msf{k}_1$ and Bob to use secret $\msf{k}_2$, and the attacker knows both secrets. Later, the attackers use these two keys to reveal and forge messages. 
+    
+    \item {\bf Workflow:}
+    \begin{itemize}
+    \item Consider two users Alice and Bob who want to establish a secret key $\msf{k}$ between them.
+    
+    \item Alice picks random $\alpha\sample\{0,1,...,p-2\}$ and Bob picks $\beta\sample\{0,1,...,p-2\}$.
+    
+    \item The attacker picks random $\gamma\sample\{0,1,...,p-2\}$ and $\delta\sample\{0,1,...,p-2\}$.
+    
+    \item Alice \emph{intends to} send Bob $g^\alpha \pmod{p}$ and Bob \emph{intends to} send Alice $g^\beta \pmod{p}$.
+    
+    \item The attacker drops Alice's packet to Bob and sees $g^\alpha\pmod{p}$, and the attacker drops Bob's packet to Alice and sees $g^\beta\pmod{p}$.
+    
+    \item The attacker, pretending to be Alice, sends Bob $g^\gamma\pmod{p}$.
+    
+    \item The attacker, pretending to be Bob, sends Alice $g^\delta\pmod{p}$.
+    
+    \item Alice computes $g^{\alpha\delta}\pmod{p}$ and Bob computes $g^{\beta\gamma}\pmod{p}$.
+    
+    \item Now Alice will be sharing a secret known by the attacker, and so does Bob.
+    
+    \item Later when Alice is communicating with Bob, the attacker can use the secrets to decrypt the communication and forward the messages. 
+    
+    \item None of Alice and Bob will realize it unless they use other communication not compromised by the attacker to double check whether they are using the same secret.
+    \end{itemize}
+\end{itemize}
+
+\newpage
+\section{Public-key encryption and cryptographic hash functions (Feb 14)}
+\parhead{Public-key encryption:}
+\begin{itemize}
+    \item {\bf Syntax:}
+    \begin{itemize}
+        \item $\msf{KeyGen}()\rightarrow(\msf{ek},\msf{dk})$, which generates a key pair $(\msf{ek},\msf{dk})$ where $\msf{ek}$ is the encryption key and $\msf{dk}$ is the decryption key.
+        
+        \item $\msf{Enc}(\msf{ek},\msf{m})\rightarrow \msf{c}$, which encrypts a message $m$ (usually cannot be too long) into ciphertext $c$, under the encryption key $\msf{ek}$.
+        
+        \item $\msf{Dec}(\msf{dk},\msf{c})\rightarrow\msf{m}$, which decrypts the ciphertext $c$ into the message $m$; this requires the decryption key $\msf{dk}$.
+    \end{itemize}
+    
+    \item {\bf Application:} Alice can publicize her encryption key $\msf{ek}_\msf{Alice}$ so that everyone else can send an encrypted message to Alice and is sure that only Alice can decrypt that message.
+    
+    \item {\bf Security:} IND-CPA, which means that using the same encryption key to encrypt the same message should end up with different ciphertexts.
+\end{itemize}
+
+\parhead{ElGamal encryption:}
+\begin{itemize}
+    \item For instructional purpose, the version below is simplified. It actually does not achieve IND-CPA, but only one-wayness.
+    
+    \item {\bf Construction:} We choose a fixed prime $p$ and a fixed generator $g$ in this group.
+    \begin{itemize}
+        \item $\msf{KeyGen}()\rightarrow(\msf{ek},\msf{dk})$.
+        \begin{itemize}
+            \item Randomly choose $\msf{dk}\sample\{0,1,...,p-2\}$.
+            
+            \item Compute $\msf{ek}=g^\msf{dk}\pmod{p}$.
+        \end{itemize}
+        
+        \item $\msf{Enc}(\msf{ek},\msf{m})\rightarrow\msf{c}$.
+        \begin{itemize}
+            \item Randomly choose $r\sample\{0,1,...,p-2\}$.
+            
+            \item Compute $\msf{c}=(\msf{m}\cdot \msf{ek}^r\pmod{p},g^r\pmod{p})$.
+        \end{itemize}
+        
+        \item $\msf{Dec}(\msf{dk},\msf{c})\rightarrow\msf{m}$.
+        \begin{itemize}
+            \item Parse $\msf{c}=(\msf{c}_1,\msf{c}_2)$.
+            
+            \item $\msf{m}={\msf{c}_2}^{-\msf{dk}}\cdot\msf{c}_1\pmod{p}$.
+        \end{itemize}
+    \end{itemize}
+    
+    \item {\bf Security:}
+    \begin{itemize}
+        \item Based on Decisional Diffie-Hellman assumption (DDH), which will require specially chosen $g$ and $\msf{m}$ that we will not go into here.
+        
+        \item {\bf DDH assumption:} For random $\alpha,\beta,r\in\{0,1,...,p-2\}$, given $(g^\alpha,g^\beta)$, it is computationall infeasible to distinguish $g^{\alpha\beta}$ and $g^r$. 
+    \end{itemize}
+\end{itemize}
+
+\clearpage
+\parhead{Cryptographic hash functions:}
+\begin{itemize}
+    \item {\bf Syntax:} $\mathsf{Hash}: \{0,1\}^*\rightarrow\{0,1\}^\ell$; here, $\{0,1\}^*$ means arbitrary long messages, and $\ell$ is the output of the hash function.
+    
+    \item Hash function is deterministic; it does not have a key, so anyone can compute the hash of any message.
+    
+    \item SHA-256 outputs $256$ bits as output; that is to say, $\ell=256$.
+    
+    \item {\bf One-wayness:} The hash function satisfies the one-wayness requirement for one-way function.
+    \begin{itemize}
+        \item \emph{That is to say,} for messages with sufficient entropies, it is computationally infeasible to find out the message (\emph{i.e.}, preimage).
+    \end{itemize}
+    
+    \item {\bf Collision-resistant:} Although collision exists (due to compression), it is infeasible to find two different inputs $m_1$ and $m_2$ such that $\mathsf{Hash}(m_1)\neq\mathsf{Hash}(m_2)$.
+\end{itemize}
+
+\parhead{Cryptography summary:}
+\begin{itemize}
+    \item Encryption does not provide integrity.
+    \begin{itemize}
+        \item Bit flipping in CBC mode and CTR mode can result in different decryption result.
+    \end{itemize}
+    
+    \item Signature does not provide confidentiality.
+    \begin{itemize}
+        \item Not because signatures are deterministic; signatures can be indeterministic.
+        \item Using the verification key, one can always check whether the signature is for a specific message. 
+    \end{itemize}
+    
+    \item Hash function does not provide confidentiality or integrity.
+    \begin{itemize}
+        \item The same message always end up with the same hash value; it is deterministic.
+        
+        \item Everyone can compute the hash value of something; it is not key-ed. 
+    \end{itemize}
+    
+\end{itemize}
+
+\newpage
+\section{HMAC and signatures (Feb 19)}
+
+\parhead{Message authentication code (MAC):}
+\begin{itemize}
+    \item {\bf Syntax:}
+    \begin{itemize}
+        \item $\msf{MAC}(\msf{k},\msf{m})\rightarrow h$, which deterministically generates the MAC of message $m$ using key $k$.
+    \end{itemize}
+    
+    \item {\bf Security:}
+    \begin{itemize}
+        \item Only one who has key $k$ and generate the MAC for message $m$.
+    \end{itemize}
+    
+    \item {\bf Warning:} It is insecure to use the same key for encryption and message authentication code (MAC) because the security proof cannot move forward. 
+    \begin{itemize}
+        \item {\bf Example:} CBC for encryption and CBC-MAC for MAC. 
+    \end{itemize}
+\end{itemize}
+
+
+\parhead{Hash-based message authentication code (HMAC):}
+\begin{itemize}
+    \item A general transformation from any hash function to a secure MAC scheme.
+    
+    \item {\bf Construction:}
+    \begin{itemize}
+        \item $\msf{HMAC}(\msf{m})=\msf{Hash}((\msf{k}\oplus\msf{opad})\parallel\msf{Hash}((\msf{k}\oplus\msf{ipad})\parallel\msf{m}))$.
+        
+        \item Using $\msf{opad}$ and $\msf{ipad}$ is due to lack of confidence of hash functions. If we assume hash functions are ideally secure, these procedures are not interesting and unnecessary.
+    \end{itemize}
+    
+    \item {\bf Security:}
+    \begin{itemize}
+        \item Only one who has key $k$ can generate the HMAC for message $m$.
+        
+        \item Inherited from hash functions, HMAC is also one-way.
+        
+        \item Does not provide confidentiality because it is deterministic. 
+        
+        \item But if the MAC is applying on the ciphertext (encrypted by a IND-CPA encryption scheme), then the MAC does not break the confidentiality of the encryption scheme. 
+    \end{itemize}
+    
+    \item {\bf Application for key derivation:}
+    \begin{itemize}
+        \item Can be used to derive more keys from key $k$. This property is from hash function being assumed as indistinguishable as random oracles.  
+    \end{itemize}
+\end{itemize}
+
+\parhead{Password hashing:}
+\begin{itemize}
+    \item Websites need to store some information about user passwords in order to verify whether an user enters the correct password.
+    
+    \item {\bf Strawman:}
+    \begin{itemize}
+        \item Storing plaintext passwords in the database.
+        
+        \item {\color{red} \bf \emph{Risky}}. If an attacker invades the system and steals the password database, user passwords will be fully stolen. 
+    \end{itemize}
+    
+    \item {\bf The solution with simple hashing:}
+    \begin{itemize}
+        \item Storing $\msf{Hash}(\msf{pw})$ in the database.
+        
+        \item {\bf Problem:} An attacker can \emph{precompute} a long list of passwords that the attacker has encountered, and use this list to ``inverse'' some hashed passwords efficiently. 
+    \end{itemize}
+    
+    \item {\bf The solution with salted hashing:}
+    \begin{itemize}
+        \item Generating a random padding $\msf{salt}$ with sufficient entropy, and then storing $(\msf{salt},\msf{Hash}(\msf{pw}\parallel\msf{salt})$ in the database, where $\parallel$ means concatenation. 
+        
+        \item The attacker cannot use a precomputed table, but at most does the dictionary attack.
+    \end{itemize}
+    
+    \item {\bf The solution with salted hashing, slow hash function:}
+    \begin{itemize}
+        \item Besides using salt, we can intentionally employ a hash function that is slower. So that an attacker doing the brute force attack or the dictionary attack takes longer time to finish.
+        
+        \item \emph{e.g.}, PBKDF2, Argon2. 
+    \end{itemize}
+    
+    \item {\bf Security assumption:} Needs to model the hash functions as random oracles (\href{https://en.wikipedia.org/wiki/Random_oracle}{https://en.wikipedia.org/wiki/Random\_oracle}). Only one-wayness and collision-resistatnt do not suffice for password hashing. 
+\end{itemize}
+
+\parhead{Authenticated encryption:}
+\begin{itemize}
+    \item Some modes of operation that provide both confidentiality and integrity.
+    \item {\bf Example:} EAX, OCB, GCM, and OTR.
+\end{itemize}
+
+\parhead{RSA Encryption:}
+\begin{itemize}
+    \item {\bf Key generation:}
+    \begin{itemize}
+        \item Pick two sufficiently large $\msf{p},\msf{q}$ following some set of rules.
+        
+        \item The public key $\msf{pk}=(\msf{n},\msf{e})$, where $\msf{n}=\msf{p}\msf{q}$ and $\msf{e}=65537$.
+        
+        \item The private key $\msf{sk}=(\msf{n},\msf{d})$, where $\msf{n}=\msf{p}\msf{q}$ and $\msf{d}=\msf{e}^{-1}\pmod{(\msf{p}-1)(\msf{q}-1)}$. 
+    \end{itemize}
+    
+    \item {\bf Textbook RSA:} (insecure, but for example)
+    \begin{itemize}
+         \item {\bf Encryption:} The ciphertext for message $\mathsf{m}$ is $\msf{c}=\msf{m}^\msf{e}\pmod{\msf{n}}$. 
+         
+         \item {\bf Decryption:} The message can be decrypted by $\msf{m}=\msf{c}^\msf{d}\pmod{\msf{n}}$.
+         
+         \item {\bf Problem:} Not IND-CPA, and subject to many other attacks. 
+    \end{itemize}
+    
+    \item {\bf RSA-OAEP:} RSA with a padding algorithm that secures textbook RSA to be IND-CPA using random bits.
+\end{itemize}
+
+\parhead{Digital Signature:}
+\begin{itemize}
+    \item {\bf Syntax:}
+    \begin{itemize}
+        \item $\mathsf{KeyGen}\rightarrow(\msf{sk},\msf{vk})$, which generates a signing key and a verifying key.
+        
+        \item $\mathsf{Sign}(\msf{sk},\msf{m})\rightarrow\msf{sig}$, which generates a signature \emph{only} for message $m$ under the signing key $\msf{sk}$.
+        
+        \item $\mathsf{Verify}(\msf{vk},\msf{sig},\msf{m})$, which checks whether the signature is signed by $\msf{sk}$ and is \emph{specifically} for message $\msf{m}$.
+    \end{itemize}
+    \item {\bf Remark:}
+        \begin{itemize}
+            \item Signature does not offer confidentiality, although it can be randomized.
+            \begin{itemize}
+                \item {\bf Reason:} The attacker can verify the signature using different messages to see what one matches.
+            \end{itemize} 
+            
+            \item {\bf Common practice:} sign a ciphertext, rather than a plaintext.
+            
+            \item It is usually infeasible to recover $\msf{m}$ from the signature. Thus, $\msf{Verify}$ must take the message as input; it cannot output $\msf{m}$ with only the signature.
+        \end{itemize}
+        
+        
+    \item {\bf Prevent replay attacks:}
+    \begin{itemize}
+        \item Add a timestamp or a non-repeating nonce to the message.
+        \item Encrypt and sign the new message. 
+    \end{itemize}
+\end{itemize}
+
+\parhead{RSA Signature:}
+    \begin{itemize}
+        \item {\bf Key generation:} The same as in RSA encryption.
+        
+        \item {\bf Signing:} The signature for message $\msf{m}$ is $\msf{sig}=(\msf{Hash}(\msf{m}))^\msf{d}\pmod{n}$.
+        
+        \item {\bf Verifying:} Check if $\msf{sig}^e \equiv\msf{Hash}(\msf{m})\pmod{n}$
+    \end{itemize}
+
+\end{document}
